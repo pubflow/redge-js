@@ -1,0 +1,74 @@
+{
+  "name": "@pubflow/redge",
+  "version": "0.1.0",
+  "description": "Universal TypeScript client for Redge Document API, realtime, and admin inspection APIs.",
+  "type": "module",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pubflow/redge-js.git"
+  },
+  "homepage": "https://github.com/pubflow/redge-js#readme",
+  "bugs": {
+    "url": "https://github.com/pubflow/redge-js/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/react.ts --format esm,cjs --dts --sourcemap --clean",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "redge",
+    "document-api",
+    "websocket",
+    "realtime",
+    "react",
+    "react-native"
+  ],
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-test-renderer": "^18.3.1",
+    "@types/ws": "^8.5.13",
+    "react": "^18.3.1",
+    "react-test-renderer": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,75 @@
+# Store API
+
+`@pubflow/redge` exposes Redge's public Store HTTP API through `client.kv` and `client.zsets`.
+
+```ts
+import { createClient } from "@pubflow/redge";
+
+const redge = createClient({
+  baseUrl: "https://redge.example.com",
+  token: process.env.REDGE_API_TOKEN
+});
+```
+
+Document API, Store API, and WebSocket routes share the same `baseUrl` and `token`.
+
+## KV
+
+```ts
+await redge.kv.set("session:1", "hello", {
+  ttlSeconds: 60,
+  nx: true
+});
+
+const value = await redge.kv.get("session:1");
+console.log(value.value);
+
+await redge.kv.mset([
+  { key: "feature:a", value: "on" },
+  { key: "counter", value: "1" }
+]);
+
+const batch = await redge.kv.mget(["feature:a", "missing"]);
+const count = await redge.kv.incr("counter", { by: 1 });
+const ttl = await redge.kv.ttl("session:1");
+const keys = await redge.kv.scan({ match: "feature:*", limit: 100 });
+```
+
+Binary-safe writes accept `Uint8Array`:
+
+```ts
+await redge.kv.set("blob", new Uint8Array([0, 255]));
+```
+
+The server returns both `value` when UTF-8 text is available and `value_base64` for binary-safe reads.
+
+## Sorted Sets
+
+```ts
+await redge.zsets.add("rankings", "alice", 42);
+await redge.zsets.add("rankings", "bob", 50);
+
+const byRank = await redge.zsets.range("rankings", {
+  start: 0,
+  stop: 9
+});
+
+const byScore = await redge.zsets.rangeByScore("rankings", {
+  min: 0,
+  max: 100,
+  rev: true,
+  limit: 10
+});
+
+const score = await redge.zsets.score("rankings", "alice");
+const count = await redge.zsets.count("rankings", { min: 0, max: 100 });
+const card = await redge.zsets.card("rankings");
+await redge.zsets.remove("rankings", "alice");
+await redge.zsets.removeByScore("rankings", { min: 0, max: 10 });
+```
+
+`add()` supports `Uint8Array` members. Path-based `remove()` and `score()` use text members in Store API v1.
+
+## Errors
+
+Missing keys or members reject with `RedgeError` and `status: 404`. Wrong-type operations reject with `status: 409` and server details containing `code: "wrong_type"`.
