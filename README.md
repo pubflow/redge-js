@@ -38,8 +38,10 @@ const result = await products.find({
 
 await redge.kv.set("session:1", "hello", { ttlSeconds: 60 });
 const session = await redge.kv.get("session:1");
+const alive = await redge.kv.exists("session:1");
 
 await redge.zsets.add("rankings", "alice", 42);
+await redge.zsets.incrBy("rankings", "alice", 1);
 const leaders = await redge.zsets.rangeByScore("rankings", {
   min: 0,
   max: 100,
@@ -55,7 +57,7 @@ const leaders = await redge.zsets.rangeByScore("rankings", {
 - React
 - React Native with global or injected `fetch` and `WebSocket`
 - Document API CRUD/query/indexes
-- Store API KV, TTL, counters, scan, and sorted sets
+- Store API KV (including exists/type/batch delete), TTL, counters, scan, and sorted sets (including multi-add, incrBy, popMin/popMax)
 - WebSocket subscriptions
 - Admin API key inspection, zset inspection, cache stats, info, and cleanup
 

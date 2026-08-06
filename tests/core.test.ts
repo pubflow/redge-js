@@ -151,6 +151,16 @@ describe("Store API client", () => {
     });
     await expect(client.kv.getdel("session:1")).resolves.toMatchObject({ value: "hello" });
     await expect(client.kv.delete("session:1")).resolves.toMatchObject({ deleted: 1 });
+    await expect(client.kv.type("counter")).resolves.toMatchObject({ type: "string" });
+    await expect(client.kv.exists("counter")).resolves.toMatchObject({ exists: true });
+    await expect(client.kv.mexists(["counter", "missing"])).resolves.toMatchObject({
+      count: 1,
+      items: [
+        { key: "counter", exists: true },
+        { key: "missing", exists: false }
+      ]
+    });
+    await expect(client.kv.mdelete(["counter", "missing"])).resolves.toMatchObject({ deleted: 1 });
 
     expect(requests.map((request) => request.path)).toContain("/v1/kv/session%3A1");
     expect(requests.find((request) => request.path === "/v1/kv/bin")?.body).toEqual({
@@ -161,7 +171,13 @@ describe("Store API client", () => {
   it("performs sorted set operations through the public Store API", async () => {
     const client = createClient({ baseUrl, token: "test-token" });
 
-    await expect(client.zsets.add("rankings", "a", 1)).resolves.toMatchObject({ added: true });
+    await expect(client.zsets.add("rankings", "a", 1)).resolves.toMatchObject({ added: 1 });
+    await expect(
+      client.zsets.addMany("rankings", [
+        { member: "b", score: 2 },
+        { member: "c", score: 3 }
+      ])
+    ).resolves.toMatchObject({ added: 2 });
     await expect(client.zsets.range("rankings", { start: 0, stop: 1 })).resolves.toMatchObject({
       members: [{ member: "a", score: 1 }]
     });
@@ -175,6 +191,14 @@ describe("Store API client", () => {
       count: 1
     });
     await expect(client.zsets.card("rankings")).resolves.toMatchObject({ card: 1 });
+    await expect(client.zsets.incrBy("rankings", "a", 4)).resolves.toMatchObject({ score: 5 });
+    await expect(client.zsets.popMin("rankings", { count: 1 })).resolves.toMatchObject({
+      members: [{ member: "a", score: 5 }]
+    });
+    await expect(client.zsets.popMax("rankings", { count: 1 })).resolves.toMatchObject({
+      members: [{ member: "c", score: 3 }]
+    });
+    await expect(client.zsets.removeMany("rankings", ["b"])).resolves.toMatchObject({ removed: 1 });
     await expect(client.zsets.remove("rankings", "a")).resolves.toMatchObject({ removed: 1 });
     await expect(client.zsets.removeByScore("rankings", { min: 0, max: 2 })).resolves.toMatchObject({
       removed: 1
@@ -334,8 +358,38 @@ function routeMock(
     res.end(JSON.stringify({ db: 0, key: "session:1", deleted: 1 }));
     return;
   }
+  if (method === "GET" && url.pathname === "/v1/kv/counter/type") {
+    res.end(JSON.stringify({ db: 0, key: "counter", type: "string" }));
+    return;
+  }
+  if (method === "GET" && url.pathname === "/v1/kv/counter/exists") {
+    res.end(JSON.stringify({ db: 0, key: "counter", exists: true }));
+    return;
+  }
+  if (method === "POST" && url.pathname === "/v1/kv/batch/exists") {
+    res.end(
+      JSON.stringify({
+        db: 0,
+        count: 1,
+        items: [
+          { key: "counter", exists: true },
+          { key: "missing", exists: false }
+        ]
+      })
+    );
+    return;
+  }
+  if (method === "POST" && url.pathname === "/v1/kv/batch/delete") {
+    res.end(JSON.stringify({ db: 0, deleted: 1 }));
+    return;
+  }
   if (method === "POST" && url.pathname === "/v1/zsets/rankings/members") {
-    res.end(JSON.stringify({ db: 0, key: "rankings", added: true }));
+    const body = requests[requests.length - 1]?.body as { members?: unknown[] } | undefined;
+    if (body?.members) {
+      res.end(JSON.stringify({ db: 0, key: "rankings", added: 2 }));
+      return;
+    }
+    res.end(JSON.stringify({ db: 0, key: "rankings", added: 1 }));
     return;
   }
   if (method === "GET" && url.pathname === "/v1/zsets/rankings/members") {
@@ -356,6 +410,22 @@ function routeMock(
   }
   if (method === "GET" && url.pathname === "/v1/zsets/rankings/card") {
     res.end(JSON.stringify({ db: 0, key: "rankings", card: 1 }));
+    return;
+  }
+  if (method === "POST" && url.pathname === "/v1/zsets/rankings/incrby") {
+    res.end(JSON.stringify({ db: 0, key: "rankings", member: "a", score: 5 }));
+    return;
+  }
+  if (method === "POST" && url.pathname === "/v1/zsets/rankings/popmin") {
+    res.end(JSON.stringify({ db: 0, key: "rankings", members: [{ member: "a", member_base64: "YQ==", score: 5 }] }));
+    return;
+  }
+  if (method === "POST" && url.pathname === "/v1/zsets/rankings/popmax") {
+    res.end(JSON.stringify({ db: 0, key: "rankings", members: [{ member: "c", member_base64: "Yw==", score: 3 }] }));
+    return;
+  }
+  if (method === "POST" && url.pathname === "/v1/zsets/rankings/members/remove") {
+    res.end(JSON.stringify({ db: 0, key: "rankings", removed: 1 }));
     return;
   }
   if (method === "DELETE" && url.pathname === "/v1/zsets/rankings/members/a") {

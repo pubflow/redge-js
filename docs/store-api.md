@@ -30,8 +30,16 @@ await redge.kv.mset([
 ]);
 
 const batch = await redge.kv.mget(["feature:a", "missing"]);
+await redge.kv.delete("feature:a");
+const popped = await redge.kv.getdel("session:1");
 const count = await redge.kv.incr("counter", { by: 1 });
-const ttl = await redge.kv.ttl("session:1");
+await redge.kv.expire("counter", 120);
+await redge.kv.persist("counter");
+const ttl = await redge.kv.ttl("counter");
+const type = await redge.kv.type("counter");
+const exists = await redge.kv.exists("counter");
+const existence = await redge.kv.mexists(["counter", "missing"]);
+await redge.kv.mdelete(["counter", "stale:1"]);
 const keys = await redge.kv.scan({ match: "feature:*", limit: 100 });
 ```
 
@@ -47,7 +55,10 @@ The server returns both `value` when UTF-8 text is available and `value_base64` 
 
 ```ts
 await redge.zsets.add("rankings", "alice", 42);
-await redge.zsets.add("rankings", "bob", 50);
+await redge.zsets.addMany("rankings", [
+  { member: "bob", score: 50 },
+  { member: "carol", score: 30 }
+]);
 
 const byRank = await redge.zsets.range("rankings", {
   start: 0,
@@ -62,13 +73,17 @@ const byScore = await redge.zsets.rangeByScore("rankings", {
 });
 
 const score = await redge.zsets.score("rankings", "alice");
+await redge.zsets.incrBy("rankings", "alice", 1.5);
+const lowest = await redge.zsets.popMin("rankings", { count: 1 });
+const highest = await redge.zsets.popMax("rankings", { count: 1 });
 const count = await redge.zsets.count("rankings", { min: 0, max: 100 });
 const card = await redge.zsets.card("rankings");
 await redge.zsets.remove("rankings", "alice");
+await redge.zsets.removeMany("rankings", ["bob", "carol"]);
 await redge.zsets.removeByScore("rankings", { min: 0, max: 10 });
 ```
 
-`add()` supports `Uint8Array` members. Path-based `remove()` and `score()` use text members in Store API v1.
+`add()` / `addMany()` support `Uint8Array` members. Path-based `remove()` and `score()` use text members in Store API v1. Prefer `removeMany()` for binary members.
 
 ## Errors
 

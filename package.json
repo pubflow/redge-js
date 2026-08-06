@@ -1,6 +1,6 @@
 {
   "name": "@pubflow/redge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Universal TypeScript client for Redge Document API, realtime, and admin inspection APIs.",
   "type": "module",
   "sideEffects": false,

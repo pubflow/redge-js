@@ -2,11 +2,14 @@ import { RedgeError } from "./errors";
 import type { HttpClient } from "./http";
 import type {
   KVDeleteResult,
+  KVExistsResult,
   KVExpireOptions,
   KVExpireResult,
   KVGetOptions,
   KVIncrOptions,
   KVIncrResult,
+  KVMDeleteResult,
+  KVMExistsResult,
   KVMGetResult,
   KVMSetItem,
   KVMSetOptions,
@@ -15,6 +18,7 @@ import type {
   KVScanResult,
   KVSetOptions,
   KVTtlResult,
+  KVTypeResult,
   KVValue,
   RequestOptions
 } from "./types";
@@ -111,6 +115,38 @@ export class KVClient {
 
   ttl(key: string, options: KVGetOptions = {}): Promise<KVTtlResult> {
     return this.http.request<KVTtlResult>(`${this.keyPath(key)}/ttl`, {
+      query: { db: options.db },
+      ...options
+    });
+  }
+
+  type(key: string, options: KVGetOptions = {}): Promise<KVTypeResult> {
+    return this.http.request<KVTypeResult>(`${this.keyPath(key)}/type`, {
+      query: { db: options.db },
+      ...options
+    });
+  }
+
+  exists(key: string, options: KVGetOptions = {}): Promise<KVExistsResult> {
+    return this.http.request<KVExistsResult>(`${this.keyPath(key)}/exists`, {
+      query: { db: options.db },
+      ...options
+    });
+  }
+
+  mexists(keys: string[], options: KVGetOptions = {}): Promise<KVMExistsResult> {
+    return this.http.request<KVMExistsResult>("/v1/kv/batch/exists", {
+      method: "POST",
+      body: { keys },
+      query: { db: options.db },
+      ...options
+    });
+  }
+
+  mdelete(keys: string[], options: KVGetOptions = {}): Promise<KVMDeleteResult> {
+    return this.http.request<KVMDeleteResult>("/v1/kv/batch/delete", {
+      method: "POST",
+      body: { keys },
       query: { db: options.db },
       ...options
     });

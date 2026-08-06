@@ -221,6 +221,34 @@ export interface KVTtlResult {
   ttl_state: KVTTLState;
 }
 
+export interface KVTypeResult {
+  db: number;
+  key: string;
+  type: "none" | "string" | "zset";
+}
+
+export interface KVExistsResult {
+  db: number;
+  key: string;
+  exists: boolean;
+}
+
+export interface KVMExistsItem {
+  key: string;
+  exists: boolean;
+}
+
+export interface KVMExistsResult {
+  db: number;
+  count: number;
+  items: KVMExistsItem[];
+}
+
+export interface KVMDeleteResult {
+  db: number;
+  deleted: number;
+}
+
 export interface KVScanOptions extends RequestOptions {
   db?: number;
   match?: string;
@@ -258,12 +286,40 @@ export interface ZSetMember {
 export interface ZSetMutationResult {
   db: number;
   key: string;
-  added?: boolean;
+  added?: number;
   removed?: number;
+}
+
+export interface ZSetAddItem {
+  member: string | Uint8Array;
+  score: number;
 }
 
 export interface ZSetAddOptions extends RequestOptions {
   db?: number;
+}
+
+export interface ZSetIncrByOptions extends RequestOptions {
+  db?: number;
+}
+
+export interface ZSetIncrByResult {
+  db: number;
+  key: string;
+  member?: string;
+  member_base64?: string;
+  score: number;
+}
+
+export interface ZSetPopOptions extends RequestOptions {
+  db?: number;
+  count?: number;
+}
+
+export interface ZSetPopResult {
+  db: number;
+  key: string;
+  members: ZSetMember[];
 }
 
 export interface ZSetPublicRangeOptions extends RequestOptions {
